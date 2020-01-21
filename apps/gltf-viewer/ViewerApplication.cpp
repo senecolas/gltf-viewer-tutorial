@@ -87,7 +87,7 @@ int ViewerApplication::run()
           const auto &node = model.nodes[nodeIdx];
           const glm::mat4 modelMatrix = getLocalToWorldMatrix(node, parentMatrix);
 
-          // if the node has a mesh
+          // Draw mesh
           if (node.mesh >= 0) {
             const auto mvMatrix = viewMatrix * modelMatrix; // Also called localToCamera matrix
             const auto mvpMatrix = projMatrix * mvMatrix; // Also called localToScreen matrix
@@ -118,7 +118,7 @@ int ViewerApplication::run()
               }
             }
           }
-          
+
           // Draw children
           for (const auto childNodeIdx : node.children) {
             drawNode(childNodeIdx, modelMatrix);
