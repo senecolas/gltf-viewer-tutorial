@@ -83,13 +83,57 @@ int ViewerApplication::run()
     // We use a std::function because a simple lambda cannot be recursive
     const std::function<void(int, const glm::mat4 &)> drawNode =
         [&](int nodeIdx, const glm::mat4 &parentMatrix) {
-          // TODO The drawNode function
+          // ++ The drawNode function
+          const auto &node = model.nodes[nodeIdx];
+          const glm::mat4 modelMatrix = getLocalToWorldMatrix(node, parentMatrix);
+
+          // if the node has a mesh
+          if (node.mesh >= 0) {
+            const auto mvMatrix = viewMatrix * modelMatrix; // Also called localToCamera matrix
+            const auto mvpMatrix = projMatrix * mvMatrix; // Also called localToScreen matrix
+            const auto normalMatrix = glm::transpose(glm::inverse(mvMatrix));
+
+            // send to the shaders
+            glUniformMatrix4fv(modelViewProjMatrixLocation, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+            glUniformMatrix4fv(modelViewMatrixLocation, 1, GL_FALSE, glm::value_ptr(mvMatrix));
+            glUniformMatrix4fv(normalMatrixLocation, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+
+            // draw primitives
+            const auto &mesh = model.meshes[node.mesh];
+            const auto &vaoRange = meshToVertexArrays[node.mesh];
+            for (size_t pIdx = 0; pIdx < mesh.primitives.size(); ++pIdx) {
+              const auto vao = vertexArrayObjects[vaoRange.begin + pIdx];
+              const auto &primitive = mesh.primitives[pIdx];
+              glBindVertexArray(vao);
+              if (primitive.indices >= 0){
+                const auto &accessor = model.accessors[primitive.indices];
+                const auto &bufferView = model.bufferViews[accessor.bufferView];
+                const auto byteOffset = accessor.byteOffset + bufferView.byteOffset;
+                glDrawElements(primitive.mode, GLsizei(accessor.count), accessor.componentType, (const GLvoid *)byteOffset);
+              } else {
+                // Take first accessor to get the count
+                const auto accessorIdx = (*begin(primitive.attributes)).second;
+                const auto &accessor = model.accessors[accessorIdx];
+                glDrawArrays(primitive.mode, 0, GLsizei(accessor.count));
+              }
+            }
+          }
+          
+          // Draw children
+          for (const auto childNodeIdx : node.children) {
+            drawNode(childNodeIdx, modelMatrix);
+          }
+
         };
 
     // Draw the scene referenced by gltf file
     if (model.defaultScene >= 0) {
-      // TODO Draw all nodes
+      // ++ Draw all nodes
+      for(const auto nodeIdx : model.scenes[model.defaultScene].nodes){
+        drawNode(nodeIdx, glm::mat4(1));
+      }
     }
+    glBindVertexArray(0);
   };
 
   // Loop until the user closes the window
