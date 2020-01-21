@@ -5,6 +5,8 @@
 #include "utils/filesystem.hpp"
 #include "utils/shaders.hpp"
 
+#include <tiny_gltf.h>
+
 class ViewerApplication
 {
 public:
@@ -25,6 +27,8 @@ private:
 
   GLsizei m_nWindowWidth = 1280;
   GLsizei m_nWindowHeight = 720;
+
+  bool loadGltfFile(tinygltf::Model &model);
 
   const fs::path m_AppPath;
   const std::string m_AppName;
