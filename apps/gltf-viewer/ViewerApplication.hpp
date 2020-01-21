@@ -30,6 +30,8 @@ private:
 
   bool loadGltfFile(tinygltf::Model &model);
 
+  std::vector<GLuint> createBufferObjects( const tinygltf::Model &model);
+
   const fs::path m_AppPath;
   const std::string m_AppName;
   const fs::path m_ShadersRootPath;
