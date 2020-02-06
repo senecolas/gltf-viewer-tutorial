@@ -107,4 +107,87 @@ bool FirstPersonCameraController::update(float elapsedTime)
   return true;
 }
 
-bool TrackballCameraController::update(float elapsedTime) { return false; }
+bool TrackballCameraController::update(float elapsedTime)
+{
+  if (glfwGetMouseButton(m_pWindow, GLFW_MOUSE_BUTTON_MIDDLE) &&
+      !m_MiddleButtonPressed) {
+    m_MiddleButtonPressed = true;
+    glfwGetCursorPos(
+        m_pWindow, &m_LastCursorPosition.x, &m_LastCursorPosition.y);
+  } else if (!glfwGetMouseButton(m_pWindow, GLFW_MOUSE_BUTTON_MIDDLE) &&
+             m_MiddleButtonPressed) {
+    m_MiddleButtonPressed = false;
+  }
+
+  const auto cursorDelta = ([&]() {
+    if (m_MiddleButtonPressed) {
+      dvec2 cursorPosition;
+      glfwGetCursorPos(m_pWindow, &cursorPosition.x, &cursorPosition.y);
+      const auto delta = cursorPosition - m_LastCursorPosition;
+      m_LastCursorPosition = cursorPosition;
+      return delta;
+    }
+    return dvec2(0);
+  })();
+
+  float pedestalUp = 0.f;
+  float dollyIn = 0.f;
+  float rollRightAngle = 0.f;
+
+  auto horizontalMovement = 0.01f * float(cursorDelta.x);
+  auto verticalMovement = 0.01f * float(cursorDelta.y);
+  const auto hasMoved = horizontalMovement || verticalMovement;
+  if (!hasMoved) {
+    return false;
+  }
+
+  // SHIFT = Pan
+  if (glfwGetKey(m_pWindow, GLFW_KEY_LEFT_SHIFT)) {
+    m_camera.moveLocal(horizontalMovement, pedestalUp, dollyIn);
+    return true;
+  }
+
+  // CTRL = Zoom
+  if (glfwGetKey(m_pWindow, GLFW_KEY_LEFT_CONTROL)) {
+    if (horizontalMovement == 0.f) {
+      return false;
+    }
+
+    const auto viewVector = m_camera.center() - m_camera.eye();
+    const auto viewLength = glm::length(viewVector);
+
+    if (horizontalMovement > 0.f) {
+      // [FROM CHEAT] We don't want to move more that the length of the view vector (cannot go beyond target)
+      horizontalMovement = glm::min(horizontalMovement, viewLength - 1e-4f);
+    }
+
+    // Normalize view vector for the translation
+    const auto front = viewVector / viewLength;
+    const auto translationVector = horizontalMovement * front;
+
+    // Update camera
+    const auto newEye = m_camera.eye() + translationVector;
+    m_camera = Camera(newEye, m_camera.center(), m_worldUpAxis);
+
+    return true;
+  }
+
+  // NO KEY = Rotate
+  const auto depthAxis = m_camera.eye() - m_camera.center();
+
+  // Vertical
+  const auto horizontalAxis = m_camera.left();
+  const auto longitudeRotationMatrix = rotate(mat4(1), verticalMovement, horizontalAxis);
+  auto rotatedDepthAxis = vec3(longitudeRotationMatrix * vec4(depthAxis, 0));
+
+  // Horizontal
+  const auto latitudeRotationMatrix = rotate(mat4(1), -horizontalMovement, m_worldUpAxis);
+
+  const auto result = vec3(latitudeRotationMatrix * vec4(rotatedDepthAxis, 0));
+
+  // Update camera
+  const auto newEye = m_camera.center() + result;
+  m_camera = Camera(newEye, m_camera.center(), m_worldUpAxis);
+
+  return true;
+}
