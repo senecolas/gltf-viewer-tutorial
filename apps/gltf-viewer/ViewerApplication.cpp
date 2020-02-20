@@ -41,6 +41,8 @@ int ViewerApplication::run()
       glGetUniformLocation(glslProgram.glId(), "uLightIntensity");
   const auto baseColorTextureLocation =
       glGetUniformLocation(glslProgram.glId(), "uBaseColorTexture");
+  const auto baseColorLocation =
+      glGetUniformLocation(glslProgram.glId(), "uBaseColorFactor");
   
   tinygltf::Model model;
 
@@ -114,18 +116,24 @@ int ViewerApplication::run()
   // Lambda function to material binding
   const auto bindMaterial = [&](const auto materialIndex) {
     auto texObject = whiteTexture; // default white texture
+    float baseColor[] = {1, 1, 1, 1};
     if(materialIndex >= 0 ){
       const auto &material = model.materials[materialIndex];
       const auto &pbrMetallicRoughness = material.pbrMetallicRoughness;
       if(pbrMetallicRoughness.baseColorTexture.index >= 0) {
         texObject = textureObjects[pbrMetallicRoughness.baseColorTexture.index];
       }
+      baseColor[0] = (float)pbrMetallicRoughness.baseColorFactor[0];
+      baseColor[1] = (float)pbrMetallicRoughness.baseColorFactor[1];
+      baseColor[2] = (float)pbrMetallicRoughness.baseColorFactor[2];
+      baseColor[3] = (float)pbrMetallicRoughness.baseColorFactor[3];
     }
     // Bind texObject to target GL_TEXTURE_2D of texture unit 0
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texObject);
     // By setting the uniform to 0, we tell OpenGL the texture is bound on tex unit 0
     glUniform1i(baseColorTextureLocation, 0);
+    glUniform4f(baseColorLocation, baseColor[0], baseColor[1], baseColor[2], baseColor[3]);
   };
 
   // Lambda function to draw the scene
