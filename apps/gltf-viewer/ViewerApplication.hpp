@@ -35,13 +35,15 @@ private:
 
   std::vector<GLuint> createVertexArrayObjects( const tinygltf::Model &model, const std::vector<GLuint> &bufferObjects, std::vector<VaoRange> & meshIndexToVaoRange);
 
+  std::vector<GLuint> createTextureObjects(const tinygltf::Model &model) const;
+
   const fs::path m_AppPath;
   const std::string m_AppName;
   const fs::path m_ShadersRootPath;
 
   fs::path m_gltfFilePath;
   std::string m_vertexShader = "forward.vs.glsl";
-  std::string m_fragmentShader = "diffuse_directional_light.fs.glsl";
+  std::string m_fragmentShader = "pbr_directional_light.fs.glsl";
 
   bool m_hasUserCamera = false;
   Camera m_userCamera;
