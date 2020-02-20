@@ -118,7 +118,6 @@ int ViewerApplication::run()
       const auto &material = model.materials[materialIndex];
       const auto &pbrMetallicRoughness = material.pbrMetallicRoughness;
       if(pbrMetallicRoughness.baseColorTexture.index >= 0) {
-        std::cout << materialIndex << ", " << pbrMetallicRoughness.baseColorTexture.index << " , " << textureObjects.size() << std::endl;
         texObject = textureObjects[pbrMetallicRoughness.baseColorTexture.index];
       }
     }
@@ -179,7 +178,7 @@ int ViewerApplication::run()
               const auto &primitive = mesh.primitives[pIdx];
 
               // Bind material
-              bindMaterial(pIdx);
+              bindMaterial(primitive.material);
 
               glBindVertexArray(vao);
               if (primitive.indices >= 0){
