@@ -43,6 +43,12 @@ int ViewerApplication::run()
       glGetUniformLocation(glslProgram.glId(), "uBaseColorTexture");
   const auto baseColorLocation =
       glGetUniformLocation(glslProgram.glId(), "uBaseColorFactor");
+  const auto metallicRoughnessTextureLocation =
+      glGetUniformLocation(glslProgram.glId(), "uMetallicRoughnessTexture");  
+  const auto roughnessFactorLocation =
+      glGetUniformLocation(glslProgram.glId(), "uRoughnessFactor");
+  const auto metallicFactorLocation =
+      glGetUniformLocation(glslProgram.glId(), "uMetallicFactor");
   
   tinygltf::Model model;
 
@@ -115,24 +121,43 @@ int ViewerApplication::run()
 
   // Lambda function to material binding
   const auto bindMaterial = [&](const auto materialIndex) {
-    auto texObject = whiteTexture; // default white texture
+    // default white texture
+    auto texObject = whiteTexture; 
+    auto metallicRoughnessTex = 0u;
     float baseColor[] = {1, 1, 1, 1};
+    float roughnessFactor = 1.f;
+    float metallicFactor = 1.f;
+    
     if(materialIndex >= 0 ){
       const auto &material = model.materials[materialIndex];
       const auto &pbrMetallicRoughness = material.pbrMetallicRoughness;
+      // Get base color texture 
       if(pbrMetallicRoughness.baseColorTexture.index >= 0) {
         texObject = textureObjects[pbrMetallicRoughness.baseColorTexture.index];
+      }
+      // Get metallic Roughness texture 
+      if (pbrMetallicRoughness.metallicRoughnessTexture.index >= 0) {
+          metallicRoughnessTex = textureObjects[pbrMetallicRoughness.metallicRoughnessTexture.index];
       }
       baseColor[0] = (float)pbrMetallicRoughness.baseColorFactor[0];
       baseColor[1] = (float)pbrMetallicRoughness.baseColorFactor[1];
       baseColor[2] = (float)pbrMetallicRoughness.baseColorFactor[2];
       baseColor[3] = (float)pbrMetallicRoughness.baseColorFactor[3];
+      roughnessFactor = (float)pbrMetallicRoughness.roughnessFactor;
+      metallicFactor = (float)pbrMetallicRoughness.metallicFactor;
     }
-    // Bind texObject to target GL_TEXTURE_2D of texture unit 0
+    // Base Color Texture
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texObject);
-    // By setting the uniform to 0, we tell OpenGL the texture is bound on tex unit 0
-    glUniform1i(baseColorTextureLocation, 0);
+    glUniform1i(baseColorTextureLocation, 0); // By setting the uniform to 0, we tell OpenGL the texture is bound on tex unit 0
+    
+    // Metallic Roughness Texture
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, metallicRoughnessTex);
+    glUniform1i(metallicRoughnessTextureLocation, 1);
+
+    glUniform1f(roughnessFactorLocation, roughnessFactor);
+    glUniform1f(metallicFactorLocation, metallicFactor);
     glUniform4f(baseColorLocation, baseColor[0], baseColor[1], baseColor[2], baseColor[3]);
   };
 
