@@ -130,7 +130,6 @@ bool TrackballCameraController::update(float elapsedTime)
     return dvec2(0);
   })();
 
-  float pedestalUp = 0.f;
   float dollyIn = 0.f;
   float rollRightAngle = 0.f;
 
@@ -143,7 +142,7 @@ bool TrackballCameraController::update(float elapsedTime)
 
   // SHIFT = Pan
   if (glfwGetKey(m_pWindow, GLFW_KEY_LEFT_SHIFT)) {
-    m_camera.moveLocal(horizontalMovement, pedestalUp, dollyIn);
+    m_camera.moveLocal(horizontalMovement, verticalMovement, dollyIn);
     return true;
   }
 
