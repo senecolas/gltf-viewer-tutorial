@@ -402,7 +402,7 @@ int ViewerApplication::run()
         }
       }
 
-      // Texture
+      // TEXTURES
       if (ImGui::CollapsingHeader("Textures", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::Checkbox("Color texture", &showColorTexture);
         ImGui::Checkbox("Metallic Roughness texture", &showMetallicRoughnessTexture);
@@ -428,7 +428,11 @@ int ViewerApplication::run()
     m_GLFWHandle.swapBuffers(); // Swap front and back buffers
   }
 
-  // TODO clean up allocated GL data
+  // clean up allocated GL data
+  glDeleteBuffers(GLsizei(bufferObjects.size()), bufferObjects.data());
+  glDeleteBuffers(GLsizei(vertexArrayObjects.size()), vertexArrayObjects.data());
+  glDeleteTextures(GLsizei(textureObjects.size()), textureObjects.data());
+  glDeleteTextures(1, &whiteTexture);
 
   return 0;
 }
