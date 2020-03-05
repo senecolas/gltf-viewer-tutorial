@@ -8,12 +8,13 @@ uniform vec3 uLightDirection;
 uniform vec3 uLightIntensity;
 
 uniform vec4 uBaseColorFactor;
-
+uniform vec3 uEmissiveFactor;
 uniform float uRoughnessFactor;
 uniform float uMetallicFactor;
 
 uniform sampler2D uBaseColorTexture;
 uniform sampler2D uMetallicRoughnessTexture;
+uniform sampler2D uEmissiveTexture;
 
 out vec3 fColor;
 
@@ -51,9 +52,11 @@ void main()
 
   vec4 baseColorFromTexture = SRGBtoLINEAR(texture(uBaseColorTexture, vTexCoords));
   vec4 metallicRougnessFromTexture = texture(uMetallicRoughnessTexture, vTexCoords);
+  vec4 emissiveFromTexture = SRGBtoLINEAR(texture(uEmissiveTexture, vTexCoords));
 
   vec4 baseColor = baseColorFromTexture * uBaseColorFactor;
-  vec3 metallic = vec3(uMetallicFactor * metallicRougnessFromTexture.b);
+  vec3 emissive = emissiveFromTexture.rgb * uEmissiveFactor;
+  float metallic = uMetallicFactor * metallicRougnessFromTexture.b;
   float roughness = uRoughnessFactor * metallicRougnessFromTexture.g;
 
   vec3 dielectricSpecular = vec3(0.04, 0.04, 0.04);
@@ -65,11 +68,12 @@ void main()
   float alpha = roughness * roughness;
 
   // Calculate F
-  float baseShlickFactor = 1 - clamp(dot(V, N), 0, 1);
+  float VdotH = clamp(dot(V, H), 0, 1);
+  float baseShlickFactor = 1 - VdotH;
   float shlickFactor = baseShlickFactor * baseShlickFactor; // power 2
   shlickFactor *= shlickFactor; // power 4
   shlickFactor *= baseShlickFactor; // power 5
-  vec3 F = F_0 + (vec3(1) - F_0) * shlickFactor;
+  vec3 F = F_0 + (1 - F_0) * shlickFactor;
 
 
   // Calculate VIS
@@ -79,15 +83,15 @@ void main()
   float visDenominator = NdotL * sqrt(NdotV * NdotV * (1 - alpha2) + alpha2) + NdotV * sqrt(NdotL * NdotL * (1 - alpha2) + alpha2);
   float Vis = 0.0;
   if(visDenominator > 0.)
-    visDenominator= 0.5 / visDenominator;
+    Vis = 0.5 / visDenominator;
 
   // Calculate D 
   float NdotH = clamp(dot(N, H), 0, 1);
   float baseDenomD = (NdotH * NdotH * (alpha2 - 1) + 1);
-  float D = M_1_PI * alpha2 / (baseDenomD * baseDenomD);
+  float D = M_1_PI * (alpha2 / (baseDenomD * baseDenomD));
 
   vec3 f_specular = F * Vis * D;
   vec3 f_diffuse = (1 - F) * diffuse;
 
-  fColor = LINEARtoSRGB((f_diffuse + f_specular) * uLightIntensity * NdotL);
+  fColor = LINEARtoSRGB((f_diffuse + f_specular) * uLightIntensity * NdotL + emissive);
 }

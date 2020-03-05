@@ -44,11 +44,15 @@ int ViewerApplication::run()
   const auto baseColorLocation =
       glGetUniformLocation(glslProgram.glId(), "uBaseColorFactor");
   const auto metallicRoughnessTextureLocation =
-      glGetUniformLocation(glslProgram.glId(), "uMetallicRoughnessTexture");  
+      glGetUniformLocation(glslProgram.glId(), "uMetallicRoughnessTexture");
   const auto roughnessFactorLocation =
       glGetUniformLocation(glslProgram.glId(), "uRoughnessFactor");
   const auto metallicFactorLocation =
       glGetUniformLocation(glslProgram.glId(), "uMetallicFactor");
+  const auto emissiveTextureLocation =
+      glGetUniformLocation(glslProgram.glId(), "uEmissiveTexture");  
+  const auto emissiveFactorLocation =
+      glGetUniformLocation(glslProgram.glId(), "uEmissiveFactor");
   
   tinygltf::Model model;
 
@@ -124,9 +128,11 @@ int ViewerApplication::run()
     // default white texture
     auto texObject = whiteTexture; 
     auto metallicRoughnessTex = 0u;
+    auto emissionTex = 0u;
     float baseColor[] = {1, 1, 1, 1};
-    float roughnessFactor = 1.f;
-    float metallicFactor = 1.f;
+    float roughnessFactor = 0.f;
+    float metallicFactor = 0.f;
+    std::vector<double> emissionFactor = {1.0, 1.0, 1.0};
     
     if(materialIndex >= 0 ){
       const auto &material = model.materials[materialIndex];
@@ -138,13 +144,18 @@ int ViewerApplication::run()
       // Get metallic Roughness texture 
       if (pbrMetallicRoughness.metallicRoughnessTexture.index >= 0) {
           metallicRoughnessTex = textureObjects[pbrMetallicRoughness.metallicRoughnessTexture.index];
+          roughnessFactor = (float)pbrMetallicRoughness.roughnessFactor;
+          metallicFactor = (float)pbrMetallicRoughness.metallicFactor;
+      }
+      // Get emissive texture 
+      if (material.emissiveTexture.index >= 0) {
+          emissionTex = textureObjects[material.emissiveTexture.index];
+          emissionFactor = material.emissiveFactor;
       }
       baseColor[0] = (float)pbrMetallicRoughness.baseColorFactor[0];
       baseColor[1] = (float)pbrMetallicRoughness.baseColorFactor[1];
       baseColor[2] = (float)pbrMetallicRoughness.baseColorFactor[2];
       baseColor[3] = (float)pbrMetallicRoughness.baseColorFactor[3];
-      roughnessFactor = (float)pbrMetallicRoughness.roughnessFactor;
-      metallicFactor = (float)pbrMetallicRoughness.metallicFactor;
     }
     // Base Color Texture
     glActiveTexture(GL_TEXTURE0);
@@ -156,8 +167,14 @@ int ViewerApplication::run()
     glBindTexture(GL_TEXTURE_2D, metallicRoughnessTex);
     glUniform1i(metallicRoughnessTextureLocation, 1);
 
+    // Metallic Emissive Texture
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, emissionTex);
+    glUniform1i(emissiveTextureLocation, 2);
+
     glUniform1f(roughnessFactorLocation, roughnessFactor);
     glUniform1f(metallicFactorLocation, metallicFactor);
+    glUniform3f(emissiveFactorLocation, emissionFactor[0], emissionFactor[1], emissionFactor[2]);
     glUniform4f(baseColorLocation, baseColor[0], baseColor[1], baseColor[2], baseColor[3]);
   };
 
