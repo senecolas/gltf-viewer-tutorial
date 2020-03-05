@@ -53,6 +53,10 @@ int ViewerApplication::run()
       glGetUniformLocation(glslProgram.glId(), "uEmissiveTexture");  
   const auto emissiveFactorLocation =
       glGetUniformLocation(glslProgram.glId(), "uEmissiveFactor");
+  const auto occlusionTextureLocation =
+      glGetUniformLocation(glslProgram.glId(), "uOcclusionTexture");  
+  const auto occlusionStrengthLocation =
+      glGetUniformLocation(glslProgram.glId(), "uOcclusionStrength");
   
   tinygltf::Model model;
 
@@ -125,13 +129,19 @@ int ViewerApplication::run()
 
   // Lambda function to material binding
   const auto bindMaterial = [&](const auto materialIndex) {
-    // default white texture
+    // default texture
     auto texObject = whiteTexture; 
     auto metallicRoughnessTex = 0u;
     auto emissionTex = 0u;
+    auto occlusionTex = 0u;
+
     float baseColor[] = {1, 1, 1, 1};
+
+    // default factor
     float roughnessFactor = 0.f;
     float metallicFactor = 0.f;
+    float occlusionStrength = 0.f;
+
     std::vector<double> emissionFactor = {1.0, 1.0, 1.0};
     
     if(materialIndex >= 0 ){
@@ -151,6 +161,11 @@ int ViewerApplication::run()
       if (material.emissiveTexture.index >= 0) {
           emissionTex = textureObjects[material.emissiveTexture.index];
           emissionFactor = material.emissiveFactor;
+      }
+      // Get occlusion texture 
+      if (material.occlusionTexture.index >= 0) {
+          occlusionTex = textureObjects[material.occlusionTexture.index];
+          occlusionStrength = material.occlusionTexture.strength;
       }
       baseColor[0] = (float)pbrMetallicRoughness.baseColorFactor[0];
       baseColor[1] = (float)pbrMetallicRoughness.baseColorFactor[1];
@@ -172,9 +187,17 @@ int ViewerApplication::run()
     glBindTexture(GL_TEXTURE_2D, emissionTex);
     glUniform1i(emissiveTextureLocation, 2);
 
+    // Occlusion Emissive Texture
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, occlusionTex);
+    glUniform1i(occlusionTextureLocation, 3);
+
+    // Factors
     glUniform1f(roughnessFactorLocation, roughnessFactor);
     glUniform1f(metallicFactorLocation, metallicFactor);
     glUniform3f(emissiveFactorLocation, emissionFactor[0], emissionFactor[1], emissionFactor[2]);
+    glUniform1f(occlusionStrengthLocation, occlusionStrength);
+
     glUniform4f(baseColorLocation, baseColor[0], baseColor[1], baseColor[2], baseColor[3]);
   };
 
