@@ -99,8 +99,13 @@ int ViewerApplication::run()
   glm::vec3 lightIntensity(1, 1, 1);
   bool lightFromCamera = false;
 
-  // ++ Texture objects
+  // Texture objects
   const auto textureObjects = createTextureObjects(model);
+  static bool showColorTexture = true;
+  static bool showMetallicRoughnessTexture = true;
+  static bool showEmissiveTexture = true;
+  static bool showOcclusionTexture = true;
+
 
   // White texture
   GLuint whiteTexture; 
@@ -148,22 +153,22 @@ int ViewerApplication::run()
       const auto &material = model.materials[materialIndex];
       const auto &pbrMetallicRoughness = material.pbrMetallicRoughness;
       // Get base color texture 
-      if(pbrMetallicRoughness.baseColorTexture.index >= 0) {
+      if(showColorTexture && pbrMetallicRoughness.baseColorTexture.index >= 0) {
         texObject = textureObjects[pbrMetallicRoughness.baseColorTexture.index];
       }
       // Get metallic Roughness texture 
-      if (pbrMetallicRoughness.metallicRoughnessTexture.index >= 0) {
+      if (showMetallicRoughnessTexture && pbrMetallicRoughness.metallicRoughnessTexture.index >= 0) {
           metallicRoughnessTex = textureObjects[pbrMetallicRoughness.metallicRoughnessTexture.index];
           roughnessFactor = (float)pbrMetallicRoughness.roughnessFactor;
           metallicFactor = (float)pbrMetallicRoughness.metallicFactor;
       }
       // Get emissive texture 
-      if (material.emissiveTexture.index >= 0) {
+      if (showEmissiveTexture && material.emissiveTexture.index >= 0) {
           emissionTex = textureObjects[material.emissiveTexture.index];
           emissionFactor = material.emissiveFactor;
       }
       // Get occlusion texture 
-      if (material.occlusionTexture.index >= 0) {
+      if (showOcclusionTexture && material.occlusionTexture.index >= 0) {
           occlusionTex = textureObjects[material.occlusionTexture.index];
           occlusionStrength = material.occlusionTexture.strength;
       }
@@ -395,6 +400,14 @@ int ViewerApplication::run()
         if (colorEdit3 || intensitySlider) {
           lightIntensity = lightColor * intensityMultiplier;
         }
+      }
+
+      // Texture
+      if (ImGui::CollapsingHeader("Textures", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Checkbox("Color texture", &showColorTexture);
+        ImGui::Checkbox("Metallic Roughness texture", &showMetallicRoughnessTexture);
+        ImGui::Checkbox("Emissive texture", &showEmissiveTexture);
+        ImGui::Checkbox("Occlusion texture", &showOcclusionTexture);
       }
 
       
